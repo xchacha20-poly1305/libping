@@ -1,4 +1,4 @@
-module github.com/sagernet/libping
+module github.com/xchacha20-poly1305/libping
 
 go 1.16
 

@@ -3,7 +3,7 @@ package libping_test
 import (
 	"testing"
 
-	"github.com/sagernet/libping"
+	"github.com/xchacha20-poly1305/libping"
 )
 
 const (
