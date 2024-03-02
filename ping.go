@@ -2,15 +2,16 @@ package libping
 
 import (
 	"fmt"
+	"net"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/pkg/errors"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
 	"golang.org/x/sys/unix"
-	"net"
-	"os"
-	"strings"
-	"time"
 )
 
 const payload = "abcdefghijklmnopqrstuvwabcdefghi"
