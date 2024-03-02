@@ -1,13 +1,13 @@
 package libping
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	E "github.com/sagernet/sing/common/exceptions"
+
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
@@ -19,7 +19,7 @@ const payload = "abcdefghijklmnopqrstuvwabcdefghi"
 func IcmpPing(address string, timeout int32) (int32, error) {
 	i := net.ParseIP(address)
 	if i == nil {
-		return 0, fmt.Errorf("unable to parse ip %s", address)
+		return 0, E.New("unable to parse ip ", address)
 	}
 	var err error
 	v6 := i.To4() == nil
@@ -32,12 +32,12 @@ func IcmpPing(address string, timeout int32) (int32, error) {
 
 	f := os.NewFile(uintptr(fd), "dgram")
 	if err != nil {
-		return 0, errors.WithMessage(err, "create file from fd")
+		return 0, E.Cause(err, "create file from fd")
 	}
 
 	conn, err := net.FilePacketConn(f)
 	if err != nil {
-		return 0, errors.WithMessage(err, "create conn")
+		return 0, E.Cause(err, "create conn")
 	}
 
 	defer func(conn net.PacketConn) {
@@ -56,7 +56,7 @@ func IcmpPing(address string, timeout int32) (int32, error) {
 
 		err := conn.SetReadDeadline(time.Now().Add(time.Duration(sockTo) * time.Millisecond))
 		if err != nil {
-			return 0, errors.WithMessage(err, "set read timeout")
+			return 0, E.Cause(err, "set read timeout")
 		}
 
 		msg := icmp.Message{
@@ -74,7 +74,7 @@ func IcmpPing(address string, timeout int32) (int32, error) {
 
 		data, err := msg.Marshal(nil)
 		if err != nil {
-			return 0, errors.WithMessage(err, "make icmp message")
+			return 0, E.Cause(err, "make icmp message")
 		}
 
 		_, err = conn.WriteTo(data, &net.UDPAddr{
@@ -82,7 +82,7 @@ func IcmpPing(address string, timeout int32) (int32, error) {
 			Port: 0,
 		})
 		if err != nil {
-			return 0, errors.WithMessage(err, "write icmp message")
+			return 0, E.Cause(err, "write icmp message")
 		}
 
 		_, _, err = conn.ReadFrom(data)
@@ -91,7 +91,7 @@ func IcmpPing(address string, timeout int32) (int32, error) {
 				continue
 			}
 
-			return 0, errors.WithMessage(err, "read icmp message")
+			return 0, E.Cause(err, "read icmp message")
 		}
 
 		return int32(time.Since(start).Milliseconds()), nil
