@@ -17,7 +17,7 @@ type wrappedClientPacketConn struct {
 	v6  bool
 }
 
-func (w wrappedClientPacketConn) ReadFrom(p []byte) (n int, addr net.Addr, err error) {
+func (w *wrappedClientPacketConn) ReadFrom(p []byte) (n int, addr net.Addr, err error) {
 	n, addr, err = w.PacketConn.ReadFrom(p)
 	if err != nil {
 		return
@@ -41,7 +41,7 @@ func (w wrappedClientPacketConn) ReadFrom(p []byte) (n int, addr net.Addr, err e
 	return
 }
 
-func (w wrappedClientPacketConn) WriteTo(p []byte, addr net.Addr) (n int, err error) {
+func (w *wrappedClientPacketConn) WriteTo(p []byte, addr net.Addr) (n int, err error) {
 	w.seq++
 	msg := icmp.Message{
 		Body: &icmp.Echo{
