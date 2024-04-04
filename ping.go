@@ -14,12 +14,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const payload = "abcdefghijklmnopqrstuvwabcdefghi"
-
 // IcmpPing used to take icmp ping.
-// address must be a pure IP address.
+// address must be a pure IP address. payload for send.
 // If failed, it will returns -1, err.
-func IcmpPing(address string, timeout time.Duration) (time.Duration, error) {
+func IcmpPing(address string, timeout time.Duration, payload []byte) (time.Duration, error) {
 	i := net.ParseIP(address)
 	if i == nil {
 		return -1, E.New("unable to parse ip ", address)
@@ -66,7 +64,7 @@ func IcmpPing(address string, timeout time.Duration) (time.Duration, error) {
 			Body: &icmp.Echo{
 				ID:   0xDBB,
 				Seq:  seq,
-				Data: []byte(payload),
+				Data: payload,
 			},
 		}
 		if !v6 {

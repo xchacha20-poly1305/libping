@@ -14,8 +14,12 @@ const (
 	testTimeout = time.Millisecond * 5000
 )
 
+var (
+	payload = []byte("abcdefghijklmnopqrstuvwxyz")
+)
+
 func TestIcmpPing4(t *testing.T) {
-	delay, err := libping.IcmpPing(testIPv4Address, testTimeout)
+	delay, err := libping.IcmpPing(testIPv4Address, testTimeout, payload)
 	if err != nil {
 		t.Errorf("Ping IPv4 %s: %v", testIPv4Address, err)
 		return
@@ -25,7 +29,7 @@ func TestIcmpPing4(t *testing.T) {
 }
 
 func TestIcmpPing6(t *testing.T) {
-	delay, err := libping.IcmpPing(testIPv6Address, testTimeout)
+	delay, err := libping.IcmpPing(testIPv6Address, testTimeout, payload)
 	if err != nil {
 		t.Errorf("Ping IPv6 %s: %v", testIPv6Address, err)
 		return
