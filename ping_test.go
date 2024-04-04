@@ -2,6 +2,7 @@ package libping_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/xchacha20-poly1305/libping"
 )
@@ -10,7 +11,7 @@ const (
 	testIPv4Address = "8.8.8.8"
 	testIPv6Address = "2001:4860:4860::8888"
 
-	testTimeout int32 = 5000
+	testTimeout = time.Millisecond * 5000
 )
 
 func TestIcmpPing4(t *testing.T) {
@@ -20,7 +21,7 @@ func TestIcmpPing4(t *testing.T) {
 		return
 	}
 
-	t.Logf("Ping to %s successful. Delay: %d ms", testIPv4Address, delay)
+	t.Logf("Ping to %s successful. Delay: %d ms", testIPv4Address, delay.Milliseconds())
 }
 
 func TestIcmpPing6(t *testing.T) {
@@ -30,5 +31,5 @@ func TestIcmpPing6(t *testing.T) {
 		return
 	}
 
-	t.Logf("Ping to %s successful. Delay: %d ms", testIPv6Address, delay)
+	t.Logf("Ping to %s successful. Delay: %d ms", testIPv6Address, delay.Milliseconds())
 }

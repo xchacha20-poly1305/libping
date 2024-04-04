@@ -17,8 +17,8 @@ import (
 const payload = "abcdefghijklmnopqrstuvwabcdefghi"
 
 // IcmpPing used to take icmp ping.
-// address must be a pure IP address, timeout is a millisecond number.
-func IcmpPing(address string, timeout int32) (int32, error) {
+// address must be a pure IP address.
+func IcmpPing(address string, timeout time.Duration) (time.Duration, error) {
 	i := net.ParseIP(address)
 	if i == nil {
 		return 0, E.New("unable to parse ip ", address)
@@ -48,15 +48,15 @@ func IcmpPing(address string, timeout int32) (int32, error) {
 
 	start := time.Now()
 	for seq := 1; timeout > 0; seq++ {
-		var sockTo int32
-		if timeout > 1000 {
-			sockTo = 1000
+		var sockTo time.Duration
+		if timeout > time.Millisecond*1000 {
+			sockTo = time.Millisecond * 1000
 		} else {
 			sockTo = timeout
 		}
 		timeout -= sockTo
 
-		err := conn.SetReadDeadline(time.Now().Add(time.Duration(sockTo) * time.Millisecond))
+		err := conn.SetReadDeadline(time.Now().Add(sockTo))
 		if err != nil {
 			return 0, E.Cause(err, "set read timeout")
 		}
@@ -96,7 +96,7 @@ func IcmpPing(address string, timeout int32) (int32, error) {
 			return 0, E.Cause(err, "read icmp message")
 		}
 
-		return int32(time.Since(start).Milliseconds()), nil
+		return time.Since(start), nil
 	}
 
 	return 0, E.New("IcmpPing timeout")
