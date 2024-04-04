@@ -18,10 +18,11 @@ const payload = "abcdefghijklmnopqrstuvwabcdefghi"
 
 // IcmpPing used to take icmp ping.
 // address must be a pure IP address.
+// If failed, it will returns -1, err.
 func IcmpPing(address string, timeout time.Duration) (time.Duration, error) {
 	i := net.ParseIP(address)
 	if i == nil {
-		return 0, E.New("unable to parse ip ", address)
+		return -1, E.New("unable to parse ip ", address)
 	}
 	var err error
 	v6 := i.To4() == nil
@@ -34,12 +35,12 @@ func IcmpPing(address string, timeout time.Duration) (time.Duration, error) {
 
 	f := os.NewFile(uintptr(fd), "dgram")
 	if err != nil {
-		return 0, E.Cause(err, "create file from fd")
+		return -1, E.Cause(err, "create file from fd")
 	}
 
 	conn, err := net.FilePacketConn(f)
 	if err != nil {
-		return 0, E.Cause(err, "create conn")
+		return -1, E.Cause(err, "create conn")
 	}
 
 	defer func(conn net.PacketConn) {
@@ -58,7 +59,7 @@ func IcmpPing(address string, timeout time.Duration) (time.Duration, error) {
 
 		err := conn.SetReadDeadline(time.Now().Add(sockTo))
 		if err != nil {
-			return 0, E.Cause(err, "set read timeout")
+			return -1, E.Cause(err, "set read timeout")
 		}
 
 		msg := icmp.Message{
@@ -76,7 +77,7 @@ func IcmpPing(address string, timeout time.Duration) (time.Duration, error) {
 
 		data, err := msg.Marshal(nil)
 		if err != nil {
-			return 0, E.Cause(err, "make icmp message")
+			return -1, E.Cause(err, "make icmp message")
 		}
 
 		_, err = conn.WriteTo(data, &net.UDPAddr{
@@ -84,7 +85,7 @@ func IcmpPing(address string, timeout time.Duration) (time.Duration, error) {
 			Port: 0,
 		})
 		if err != nil {
-			return 0, E.Cause(err, "write icmp message")
+			return -1, E.Cause(err, "write icmp message")
 		}
 
 		_, _, err = conn.ReadFrom(data)
@@ -93,7 +94,7 @@ func IcmpPing(address string, timeout time.Duration) (time.Duration, error) {
 				continue
 			}
 
-			return 0, E.Cause(err, "read icmp message")
+			return -1, E.Cause(err, "read icmp message")
 		}
 
 		return time.Since(start), nil
