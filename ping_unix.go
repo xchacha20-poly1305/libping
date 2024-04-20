@@ -16,8 +16,6 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const MaxTimeout = 5000 * time.Millisecond
-
 // IcmpPing used to take icmp ping.
 // address must be a pure IP address. payload for send.
 // If failed, it will returns -1, err.

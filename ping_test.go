@@ -1,39 +1,55 @@
-package libping_test
+package libping
 
 import (
 	"testing"
 	"time"
 
-	"github.com/xchacha20-poly1305/libping"
+	F "github.com/sagernet/sing/common/format"
 )
 
 const (
 	testIPv4Address = "8.8.8.8"
 	testIPv6Address = "2001:4860:4860::8888"
-
-	testTimeout = time.Millisecond * 5000
 )
 
 var (
 	payload = []byte("abcdefghijklmnopqrstuvwxyz")
 )
 
-func TestIcmpPing4(t *testing.T) {
-	delay, err := libping.IcmpPing(testIPv4Address, testTimeout, payload)
-	if err != nil {
-		t.Errorf("Ping IPv4 %s: %v", testIPv4Address, err)
-		return
+func TestIcmpPing(t *testing.T) {
+	tt := []struct {
+		name    string
+		address string
+		timeout time.Duration
+		wantErr bool
+	}{
+		{
+			name:    "Domain",
+			address: "i.local",
+			timeout: MaxTimeout,
+			wantErr: true,
+		},
+		{
+			name:    "IPv4",
+			address: testIPv4Address,
+			timeout: MaxTimeout,
+			wantErr: false,
+		},
+		{
+			name:    "IPv6",
+			address: testIPv6Address,
+			timeout: MaxTimeout,
+			wantErr: false,
+		},
 	}
 
-	t.Logf("Ping to %s successful. Delay: %d ms", testIPv4Address, delay.Milliseconds())
-}
+	for _, test := range tt {
+		delay, err := IcmpPing(test.address, test.timeout, payload)
+		if (err != nil) != test.wantErr {
+			t.Errorf("Test %s failed: %v", test.name, err)
+			return
+		}
 
-func TestIcmpPing6(t *testing.T) {
-	delay, err := libping.IcmpPing(testIPv6Address, testTimeout, payload)
-	if err != nil {
-		t.Errorf("Ping IPv6 %s: %v", testIPv6Address, err)
-		return
+		t.Logf("Test %s successful. Delay: %s", test.name, F.ToString(delay))
 	}
-
-	t.Logf("Ping to %s successful. Delay: %d ms", testIPv6Address, delay.Milliseconds())
 }
