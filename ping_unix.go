@@ -5,6 +5,7 @@ package libping
 import (
 	"net"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -15,6 +16,9 @@ import (
 	"golang.org/x/net/ipv6"
 	"golang.org/x/sys/unix"
 )
+
+// For Android VPN protect
+var Protect func(fd int) = nil
 
 // IcmpPing used to take icmp ping.
 // address must be a pure IP address. payload for send.
@@ -36,6 +40,10 @@ func IcmpPing(address string, timeout time.Duration, payload []byte) (time.Durat
 	f := os.NewFile(uintptr(fd), "dgram")
 	if err != nil {
 		return -1, E.Cause(err, "create file from fd")
+	}
+
+	if runtime.GOOS == "android" && Protect != nil {
+		Protect(fd)
 	}
 
 	conn, err := net.FilePacketConn(f)
