@@ -3,6 +3,7 @@
 package libping
 
 import (
+	"net"
 	"runtime"
 	"time"
 
@@ -16,4 +17,16 @@ var ErrOS = E.New("not support for: ", runtime.GOOS)
 // If failed, it will returns -1, err.
 func IcmpPing(address string, timeout time.Duration, payload []byte) (time.Duration, error) {
 	return -1, ErrOS
+}
+
+func TcpPing(address, port string, timeout time.Duration) (time.Duration, error) {
+	start := time.Now()
+
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(address, port), timeout)
+	if err != nil {
+		return -1, err
+	}
+	defer conn.Close()
+
+	return time.Since(start), nil
 }

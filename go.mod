@@ -1,6 +1,6 @@
 module github.com/xchacha20-poly1305/libping
 
-go 1.18
+go 1.20
 
 require (
 	github.com/sagernet/sing v0.4.0-beta.15

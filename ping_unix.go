@@ -3,9 +3,10 @@
 package libping
 
 import (
+	"context"
 	"net"
 	"os"
-	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,8 +18,8 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// For Android VPN protect
-var Protect func(fd int) = nil
+// Do something for fd
+var FdControl func(fd int) = nil
 
 // IcmpPing used to take icmp ping.
 // address must be a pure IP address. payload for send.
@@ -42,8 +43,8 @@ func IcmpPing(address string, timeout time.Duration, payload []byte) (time.Durat
 		return -1, E.Cause(err, "create file from fd")
 	}
 
-	if runtime.GOOS == "android" && Protect != nil {
-		Protect(fd)
+	if FdControl != nil {
+		FdControl(fd)
 	}
 
 	conn, err := net.FilePacketConn(f)
@@ -109,4 +110,52 @@ func IcmpPing(address string, timeout time.Duration, payload []byte) (time.Durat
 	}
 
 	return 0, E.New("IcmpPing timeout")
+}
+
+func TcpPing(address, port string, timeout time.Duration) (latency time.Duration, err error) {
+	ip := net.ParseIP(address)
+	if ip == nil {
+		return -1, E.New("failed to parse ip: ", address)
+	}
+	isIPv6 := ip.To4() == nil
+
+	var socketFd int
+	if isIPv6 {
+		socketFd, err = unix.Socket(unix.AF_INET6, unix.SOCK_STREAM, 0)
+	} else {
+		socketFd, err = unix.Socket(unix.AF_INET, unix.SOCK_STREAM, 0)
+	}
+	if err != nil {
+		return -1, err
+	}
+	defer unix.Close(socketFd)
+
+	if FdControl != nil {
+		FdControl(socketFd)
+	}
+
+	var sockAddr unix.Sockaddr
+	portInt, _ := strconv.Atoi(port)
+	if isIPv6 {
+		sockAddr = &unix.SockaddrInet6{Port: portInt, Addr: [16]byte(ip.To16())}
+	} else {
+		sockAddr = &unix.SockaddrInet4{Port: portInt, Addr: [4]byte(ip.To4())}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	errCh := make(chan error, 1)
+	start := time.Now()
+	go func() {
+		errCh <- unix.Connect(socketFd, sockAddr)
+	}()
+	select {
+	case <-ctx.Done():
+		return -1, E.New("TCP ping timeout")
+	case err := <-errCh:
+		if err != nil {
+			return -1, err
+		}
+		return time.Since(start), nil
+	}
 }
