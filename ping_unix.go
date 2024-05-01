@@ -3,7 +3,6 @@
 package libping
 
 import (
-	"context"
 	"net"
 	"os"
 	"strconv"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/sagernet/sing/common/x/constraints"
 
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
@@ -130,6 +130,13 @@ func TcpPing(address, port string, timeout time.Duration) (latency time.Duration
 	}
 	defer unix.Close(socketFd)
 
+	var timeval unix.Timeval
+	microseconds := timeout.Microseconds()
+	castAssignInteger(microseconds/1e6, &timeval.Sec)
+	// Specifying the type explicitly is not necessary here, but it makes GoLand happy.
+	castAssignInteger[int64](microseconds%1e6, &timeval.Usec)
+	_ = unix.SetsockoptTimeval(socketFd, unix.SOL_SOCKET, unix.SO_RCVTIMEO, &timeval)
+
 	if FdControl != nil {
 		FdControl(socketFd)
 	}
@@ -142,20 +149,15 @@ func TcpPing(address, port string, timeout time.Duration) (latency time.Duration
 		sockAddr = &unix.SockaddrInet4{Port: portInt, Addr: [4]byte(ip.To4())}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	errCh := make(chan error, 1)
 	start := time.Now()
-	go func() {
-		errCh <- unix.Connect(socketFd, sockAddr)
-	}()
-	select {
-	case <-ctx.Done():
-		return -1, E.New("TCP ping timeout")
-	case err := <-errCh:
-		if err != nil {
-			return -1, err
-		}
-		return time.Since(start), nil
+	err = unix.Connect(socketFd, sockAddr)
+	if err != nil {
+		return -1, err
 	}
+
+	return time.Since(start), nil
+}
+
+func castAssignInteger[T, R constraints.Integer](from T, to *R) {
+	*to = R(from)
 }
