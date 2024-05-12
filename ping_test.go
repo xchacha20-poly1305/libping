@@ -1,9 +1,11 @@
 package libping
 
 import (
+	"context"
 	"testing"
 
 	F "github.com/sagernet/sing/common/format"
+	M "github.com/sagernet/sing/common/metadata"
 )
 
 const (
@@ -39,7 +41,9 @@ func TestIcmpPing(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		delay, err := IcmpPing(test.address, MaxTimeout, payload)
+		ctx, cancel := context.WithTimeout(context.Background(), MaxTimeout)
+		delay, err := IcmpPing(ctx, M.ParseSocksaddr(test.address), payload)
+		cancel()
 		if (err != nil) != test.wantErr {
 			t.Errorf("Test %s failed: %v", test.name, err)
 			continue
@@ -82,7 +86,9 @@ func TestTcpPing(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		latency, err := TcpPing(test.address, test.port, MaxTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), MaxTimeout)
+		latency, err := TcpPing(ctx, M.ParseSocksaddrHostPortStr(test.address, test.port))
+		cancel()
 		if (err != nil) != test.wantErr {
 			t.Errorf("Failed to test %s: %v", test.name, err)
 			continue

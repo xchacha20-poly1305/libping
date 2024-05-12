@@ -4,6 +4,6 @@ go 1.20
 
 require (
 	github.com/sagernet/sing v0.4.0-beta.18
-	golang.org/x/net v0.24.0
-	golang.org/x/sys v0.19.0
+	golang.org/x/net v0.25.0
+	golang.org/x/sys v0.20.0
 )
