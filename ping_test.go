@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	testInvalidIpv4 = "255.255.255.0"
 	testIPv4Address = "8.8.8.8"
 	testIPv6Address = "2001:4860:4860::8888"
 )
@@ -37,6 +38,11 @@ func TestIcmpPing(t *testing.T) {
 			name:    "IPv6",
 			address: testIPv6Address,
 			wantErr: false,
+		},
+		{
+			name:    "Invalid IPv4",
+			address: testInvalidIpv4,
+			wantErr: true,
 		},
 	}
 
