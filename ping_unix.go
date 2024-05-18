@@ -19,9 +19,6 @@ import (
 
 const isUnix = true
 
-// Do something for fd
-var FdControl func(fd int) = nil
-
 // IcmpPing used to take icmp ping.
 // If failed, it will return -1, err.
 func IcmpPing(ctx context.Context, addr M.Socksaddr, payload []byte) (time.Duration, error) {

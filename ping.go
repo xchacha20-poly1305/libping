@@ -13,6 +13,9 @@ import (
 
 const MaxTimeout = 5000 * time.Millisecond
 
+// FdControl do some control before connect.
+var FdControl func(fd int) = nil
+
 func TcpPing(ctx context.Context, addr M.Socksaddr) (latency time.Duration, err error) {
 	dialer := &net.Dialer{}
 
