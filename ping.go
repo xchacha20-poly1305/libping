@@ -112,7 +112,7 @@ func IcmpPing(ctx context.Context, addr M.Socksaddr, payload []byte) (latency ti
 
 	_, _, err = conn.ReadFrom(data)
 	if err != nil {
-		return -1, E.Cause(err, "read")
+		return -1, E.Cause(err, "ReadFrom")
 	}
 
 	return time.Since(start), nil
