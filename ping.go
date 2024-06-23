@@ -3,6 +3,7 @@ package libping
 import (
 	"context"
 	"net"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
+	"golang.org/x/sys/windows"
 )
 
 const MaxTimeout = 5000 * time.Millisecond
@@ -63,25 +65,43 @@ func IcmpPing(ctx context.Context, addr M.Socksaddr, payload []byte) (latency ti
 	_ = context.AfterFunc(ctx, func() {
 		_ = conn.Close()
 	})
+
+	var rawConn syscall.RawConn
+	type sysconn interface {
+		SyscallConn() (syscall.RawConn, error)
+	}
+	if isIPv6 {
+		rawConn, err = conn.IPv6PacketConn().PacketConn.(sysconn).SyscallConn()
+	} else {
+		rawConn, err = conn.IPv4PacketConn().PacketConn.(sysconn).SyscallConn()
+	}
+	if err != nil {
+		return -1, E.Cause(err, "get syscall conn")
+	}
 	if isUnix {
-		var rawConn syscall.RawConn
-		type sysconn interface {
-			SyscallConn() (syscall.RawConn, error)
-		}
-
-		if isIPv6 {
-			rawConn, err = conn.IPv6PacketConn().PacketConn.(sysconn).SyscallConn()
-		} else {
-			rawConn, err = conn.IPv4PacketConn().PacketConn.(sysconn).SyscallConn()
-		}
-		if err != nil {
-			return -1, E.Cause(err, "get syscall conn")
-		}
-
 		_ = rawConn.Control(func(fd uintptr) {
 			if FdControl != nil {
 				FdControl(int(fd))
 			}
+		})
+	}
+	if runtime.GOOS == "windows" {
+		_ = rawConn.Control(func(fd uintptr) {
+			var sa windows.Sockaddr
+			if isIPv6 {
+				sa = &windows.SockaddrInet4{
+					Port: 0,
+					Addr: [4]byte(addr.Addr.AsSlice()),
+				}
+			} else {
+				addr.IPAddr()
+				sa = &windows.SockaddrInet6{
+					Port: 0,
+					//ZoneId: addr.Addr.Zone(),
+					Addr: [16]byte(addr.Addr.AsSlice()),
+				}
+			}
+			_ = windows.Bind(windows.Handle(fd), sa)
 		})
 	}
 
