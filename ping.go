@@ -91,14 +91,14 @@ func IcmpPing(ctx context.Context, addr M.Socksaddr, payload []byte) (latency ti
 			if isIPv6 {
 				sa = &windows.SockaddrInet4{
 					Port: 0,
-					Addr: [4]byte(addr.Addr.AsSlice()),
+					Addr: [4]byte{},
 				}
 			} else {
 				addr.IPAddr()
 				sa = &windows.SockaddrInet6{
 					Port: 0,
 					//ZoneId: addr.Addr.Zone(),
-					Addr: [16]byte(addr.Addr.AsSlice()),
+					Addr: [16]byte{},
 				}
 			}
 			_ = windows.Bind(windows.Handle(fd), sa)
