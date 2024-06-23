@@ -2,6 +2,7 @@ package libping
 
 import (
 	"context"
+	"crypto/rand"
 	"testing"
 
 	F "github.com/sagernet/sing/common/format"
@@ -15,7 +16,8 @@ const (
 )
 
 var (
-	payload = []byte("abcdefghijklmnopqrstuvwxyz")
+	payload = make([]byte, 40)
+	_, _    = rand.Read(payload)
 )
 
 func TestIcmpPing(t *testing.T) {
