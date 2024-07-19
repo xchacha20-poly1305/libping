@@ -11,7 +11,7 @@ import (
 	N "github.com/sagernet/sing/common/network"
 )
 
-const MaxTimeout = 5000 * time.Millisecond
+const DefaultTimeout = 5000 * time.Millisecond
 
 // FdControl do some control before connect.
 var FdControl func(fd int) = nil

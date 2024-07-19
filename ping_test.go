@@ -47,7 +47,7 @@ func TestIcmpPing(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		ctx, cancel := context.WithTimeout(context.Background(), MaxTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 		delay, err := IcmpPing(ctx, M.ParseSocksaddr(test.address), payload)
 		cancel()
 		if (err != nil) != test.wantErr {
@@ -92,7 +92,7 @@ func TestTcpPing(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		ctx, cancel := context.WithTimeout(context.Background(), MaxTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 		latency, err := TcpPing(ctx, M.ParseSocksaddrHostPortStr(test.address, test.port))
 		cancel()
 		if (err != nil) != test.wantErr {
