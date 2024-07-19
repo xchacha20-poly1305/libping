@@ -2,6 +2,7 @@ package libping
 
 import (
 	"context"
+	"net"
 	"testing"
 
 	F "github.com/sagernet/sing/common/format"
@@ -48,7 +49,7 @@ func TestIcmpPing(t *testing.T) {
 
 	for _, test := range tt {
 		ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
-		delay, err := IcmpPing(ctx, M.ParseSocksaddr(test.address), payload)
+		delay, err := IcmpPing(ctx, M.ParseSocksaddr(test.address), payload, nil)
 		cancel()
 		if (err != nil) != test.wantErr {
 			t.Errorf("Test %s failed: %v", test.name, err)
@@ -93,12 +94,11 @@ func TestTcpPing(t *testing.T) {
 
 	for _, test := range tt {
 		ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
-		latency, err := TcpPing(ctx, M.ParseSocksaddrHostPortStr(test.address, test.port))
+		_, err := TcpPing(ctx, &net.Dialer{}, M.ParseSocksaddrHostPortStr(test.address, test.port))
 		cancel()
 		if (err != nil) != test.wantErr {
-			t.Errorf("Failed to test %s: %v", test.name, err)
+			t.Errorf("Failed to test [%s]", test.name)
 			continue
 		}
-		t.Logf("Tested %s, latency: %d ms", test.name, latency.Milliseconds())
 	}
 }

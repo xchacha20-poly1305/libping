@@ -21,7 +21,11 @@ const isUnix = true
 
 // IcmpPing used to take icmp ping.
 // If failed, it will return -1, err.
-func IcmpPing(ctx context.Context, addr M.Socksaddr, payload []byte) (time.Duration, error) {
+// If bindAddr not nil, this function will try to bind it.
+func IcmpPing(ctx context.Context,
+	addr M.Socksaddr,
+	payload []byte,
+	bindAddr unix.Sockaddr) (time.Duration, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -40,6 +44,12 @@ func IcmpPing(ctx context.Context, addr M.Socksaddr, payload []byte) (time.Durat
 
 	if FdControl != nil {
 		FdControl(ctx, fd)
+	}
+	if bindAddr != nil {
+		err = unix.Bind(fd, bindAddr)
+		if err != nil {
+			return -1, E.Cause(err, "bind")
+		}
 	}
 
 	conn, err := net.FilePacketConn(f)
