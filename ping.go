@@ -14,16 +14,23 @@ import (
 const DefaultTimeout = 5000 * time.Millisecond
 
 // FdControl do some control before connect.
-var FdControl func(fd int) = nil
+var FdControl func(ctx context.Context, fd int) = nil
 
-func TcpPing(ctx context.Context, addr M.Socksaddr) (latency time.Duration, err error) {
-	dialer := &net.Dialer{}
-
+// TcpPing use TCP to probe `addr`.
+// In unix, this function will use dialer.ControlContext.
+func TcpPing(ctx context.Context, dialer *net.Dialer, addr M.Socksaddr) (latency time.Duration, err error) {
 	if isUnix {
-		dialer.ControlContext = func(_ context.Context, network, address string, c syscall.RawConn) error {
+		oldControl := dialer.ControlContext
+		dialer.ControlContext = func(ctx context.Context, network, address string, c syscall.RawConn) error {
+			if oldControl != nil {
+				err := oldControl(ctx, network, address, c)
+				if err != nil {
+					return err
+				}
+			}
 			return c.Control(func(fd uintptr) {
 				if FdControl != nil {
-					FdControl(int(fd))
+					FdControl(ctx, int(fd))
 				}
 			})
 		}

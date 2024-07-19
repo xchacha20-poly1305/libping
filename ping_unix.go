@@ -39,7 +39,7 @@ func IcmpPing(ctx context.Context, addr M.Socksaddr, payload []byte) (time.Durat
 	f := os.NewFile(uintptr(fd), "dgram")
 
 	if FdControl != nil {
-		FdControl(fd)
+		FdControl(ctx, fd)
 	}
 
 	conn, err := net.FilePacketConn(f)
