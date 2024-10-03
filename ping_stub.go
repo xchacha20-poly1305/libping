@@ -11,8 +11,6 @@ import (
 	M "github.com/sagernet/sing/common/metadata"
 )
 
-const isUnix = false
-
 var ErrOS = E.New("not support for: ", runtime.GOOS)
 
 // IcmpPing used to take icmp ping.

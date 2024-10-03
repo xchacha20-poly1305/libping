@@ -3,9 +3,12 @@ package libping
 import (
 	"context"
 	"net"
+	"os"
+	"sync"
 	"syscall"
 	"time"
 
+	"github.com/sagernet/sing/common/control"
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
@@ -13,28 +16,21 @@ import (
 
 const DefaultTimeout = 5000 * time.Millisecond
 
-// FdControl do some control before connect.
-var FdControl func(ctx context.Context, fd int) = nil
+var dialerPool = sync.Pool{
+	New: func() any {
+		return &net.Dialer{}
+	},
+}
 
 // TcpPing use TCP to probe `addr`.
-// In unix, this function will use dialer.ControlContext.
-func TcpPing(ctx context.Context, dialer *net.Dialer, addr M.Socksaddr) (latency time.Duration, err error) {
-	if isUnix {
-		oldControl := dialer.ControlContext
-		dialer.ControlContext = func(ctx context.Context, network, address string, c syscall.RawConn) error {
-			if oldControl != nil {
-				err := oldControl(ctx, network, address, c)
-				if err != nil {
-					return err
-				}
-			}
-			return c.Control(func(fd uintptr) {
-				if FdControl != nil {
-					FdControl(ctx, int(fd))
-				}
-			})
-		}
-	}
+func TcpPing(ctx context.Context, controlFunc control.Func, addr M.Socksaddr) (latency time.Duration, err error) {
+	dialer := dialerPool.Get().(*net.Dialer)
+	defer func() {
+		dialer.Control = nil
+		dialer.ControlContext = nil
+		dialerPool.Put(dialer)
+	}()
+	dialer.Control = controlFunc
 
 	start := time.Now()
 	conn, err := dialer.DialContext(ctx, N.NetworkTCP, addr.String())
@@ -44,4 +40,24 @@ func TcpPing(ctx context.Context, dialer *net.Dialer, addr M.Socksaddr) (latency
 	defer conn.Close()
 
 	return time.Since(start), nil
+}
+
+var _ syscall.RawConn = fdProvider(0)
+
+type fdProvider int
+
+func (f fdProvider) Control(ctl func(fd uintptr)) error {
+	if ctl == nil {
+		return os.ErrInvalid
+	}
+	ctl(uintptr(f))
+	return nil
+}
+
+func (f fdProvider) Read(_ func(fd uintptr) (done bool)) error {
+	return os.ErrInvalid
+}
+
+func (f fdProvider) Write(_ func(fd uintptr) (done bool)) error {
+	return os.ErrInvalid
 }
