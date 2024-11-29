@@ -4,6 +4,7 @@ package libping
 
 import (
 	"context"
+	"os"
 	"runtime"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 	M "github.com/sagernet/sing/common/metadata"
 )
 
-var ErrOS = E.New("not support for: ", runtime.GOOS)
+var ErrOS = E.Cause(os.ErrInvalid, "not support for: ", runtime.GOOS)
 
 // IcmpPing used to take icmp ping.
 // address must be a pure IP address. payload for send.
