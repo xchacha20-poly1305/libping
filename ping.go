@@ -23,7 +23,7 @@ var dialerPool = sync.Pool{
 }
 
 // TcpPing use TCP to probe `addr`.
-func TcpPing(ctx context.Context, controlFunc control.Func, addr M.Socksaddr) (latency time.Duration, err error) {
+func TcpPing(ctx context.Context, addr M.Socksaddr, controlFunc control.Func) (latency time.Duration, err error) {
 	dialer := dialerPool.Get().(*net.Dialer)
 	defer func() {
 		dialer.Control = nil
