@@ -4,7 +4,6 @@ import (
 	"context"
 	"net"
 	"os"
-	"sync"
 	"syscall"
 	"time"
 
@@ -16,21 +15,11 @@ import (
 
 const DefaultTimeout = 5000 * time.Millisecond
 
-var dialerPool = sync.Pool{
-	New: func() any {
-		return &net.Dialer{}
-	},
-}
-
 // TcpPing use TCP to probe `addr`.
 func TcpPing(ctx context.Context, addr M.Socksaddr, controlFunc control.Func) (latency time.Duration, err error) {
-	dialer := dialerPool.Get().(*net.Dialer)
-	defer func() {
-		dialer.Control = nil
-		dialer.ControlContext = nil
-		dialerPool.Put(dialer)
-	}()
-	dialer.Control = controlFunc
+	dialer := &net.Dialer{
+		Control: controlFunc,
+	}
 
 	start := time.Now()
 	conn, err := dialer.DialContext(ctx, N.NetworkTCP, addr.String())
