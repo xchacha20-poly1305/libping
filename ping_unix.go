@@ -8,7 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/sagernet/sing/common"
 	"github.com/sagernet/sing/common/control"
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
@@ -65,7 +64,7 @@ func IcmpPing(
 	if err != nil {
 		return -1, E.Cause(err, "create conn")
 	}
-	context.AfterFunc(ctx, func() {
+	_ = context.AfterFunc(ctx, func() {
 		_ = conn.Close()
 	})
 
@@ -89,7 +88,7 @@ func IcmpPing(
 		return -1, E.Cause(err, "make icmp message")
 	}
 
-	err = common.Error(conn.WriteTo(binaryMessage, addr.UDPAddr()))
+	_, err = conn.WriteTo(binaryMessage, addr.UDPAddr())
 	if err != nil {
 		return -1, E.Cause(err, "write icmp message")
 	}
