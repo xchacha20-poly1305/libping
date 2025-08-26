@@ -50,9 +50,9 @@ func IcmpPing(
 	if controlFunc != nil {
 		var network string
 		if isIPv6 {
-			network = N.NetworkICMPv6
+			network = N.NetworkICMP + "v6"
 		} else {
-			network = N.NetworkICMPv4
+			network = N.NetworkICMP + "v4"
 		}
 		err = controlFunc(network, addr.String(), fdProvider(fd))
 		if err != nil {
