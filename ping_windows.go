@@ -29,3 +29,7 @@ func listenIcmp(ctx context.Context, controlFunc control.Func, addr M.Socksaddr)
 	}
 	return packetConn, nil
 }
+
+func toNetAddr(addr M.Socksaddr) net.Addr {
+	return addr.IPAddr()
+}

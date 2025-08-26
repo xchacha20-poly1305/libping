@@ -80,7 +80,8 @@ func IcmpPing(
 		return -1, E.Cause(err, "marshall icmp message")
 	}
 	start := time.Now()
-	_, err = packetConn.WriteTo(message, addr.IPAddr())
+	// Windows: IPAddr Linux: UDPAddr
+	_, err = packetConn.WriteTo(message, toNetAddr(addr))
 	if err != nil {
 		return -1, E.Cause(err, "write packet")
 	}

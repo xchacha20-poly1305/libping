@@ -11,7 +11,6 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
-
 	"golang.org/x/sys/unix"
 )
 
@@ -32,17 +31,15 @@ func listenIcmp(ctx context.Context, controlFunc control.Func, addr M.Socksaddr)
 	file := os.NewFile(uintptr(fd), "dgram")
 
 	if controlFunc != nil {
-		var network string
-		if addr.IsIPv6() {
-			network = N.NetworkICMP + "v6"
-		} else {
-			network = N.NetworkICMP + "v4"
-		}
-		err = controlFunc(network, addr.String(), fdProvider(fd))
+		err = controlFunc(N.NetworkICMP, addr.String(), fdProvider(fd))
 		if err != nil {
 			return nil, E.Cause(err, "control")
 		}
 	}
 
 	return net.FilePacketConn(file)
+}
+
+func toNetAddr(addr M.Socksaddr) net.Addr {
+	return addr.UDPAddr()
 }
