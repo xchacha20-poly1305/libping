@@ -2,15 +2,22 @@ package libping
 
 import (
 	"context"
+	"math"
+	"math/rand/v2"
 	"net"
 	"os"
 	"syscall"
 	"time"
 
+	"github.com/sagernet/sing/common/buf"
 	"github.com/sagernet/sing/common/control"
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
+
+	"golang.org/x/net/icmp"
+	"golang.org/x/net/ipv4"
+	"golang.org/x/net/ipv6"
 )
 
 const DefaultTimeout = 5000 * time.Millisecond
@@ -49,4 +56,57 @@ func (f fdProvider) Read(_ func(fd uintptr) (done bool)) error {
 
 func (f fdProvider) Write(_ func(fd uintptr) (done bool)) error {
 	return os.ErrInvalid
+}
+
+// IcmpPing used to take icmp ping.
+// If failed, it will return -1, err.
+func IcmpPing(
+	ctx context.Context,
+	addr M.Socksaddr,
+	payload []byte,
+	controlFunc control.Func,
+) (time.Duration, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	packetConn, err := listenIcmp(ctx, controlFunc, addr)
+	if err != nil {
+		return -1, E.Cause(err, "listen icmp packet")
+	}
+	context.AfterFunc(ctx, func() {
+		_ = packetConn.Close()
+	})
+	message, err := buildIcmpMessage(payload, addr.IsIPv6())
+	if err != nil {
+		return -1, E.Cause(err, "marshall icmp message")
+	}
+	start := time.Now()
+	_, err = packetConn.WriteTo(message, addr.IPAddr())
+	if err != nil {
+		return -1, E.Cause(err, "write packet")
+	}
+	// Sometimes the reply's size is larger. 128 may enough?
+	buffer := buf.NewSize(128)
+	defer buffer.Release()
+	_, _, err = buffer.ReadPacketFrom(packetConn)
+	if err != nil {
+		return -1, E.Cause(err, "read icmp message")
+	}
+
+	return time.Since(start), nil
+}
+
+func buildIcmpMessage(payload []byte, isIPv6 bool) ([]byte, error) {
+	message := icmp.Message{
+		Body: &icmp.Echo{
+			ID:   rand.IntN(math.MaxUint16 + 1),
+			Seq:  0,
+			Data: payload,
+		},
+	}
+	if isIPv6 {
+		message.Type = ipv6.ICMPTypeEchoRequest
+	} else {
+		message.Type = ipv4.ICMPTypeEcho
+	}
+	return message.Marshal(nil)
 }
