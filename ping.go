@@ -85,8 +85,8 @@ func IcmpPing(
 	if err != nil {
 		return -1, E.Cause(err, "write packet")
 	}
-	// Sometimes the reply's size is larger. 128 may enough?
-	buffer := buf.NewSize(128)
+	// Theoretically speaking，request and reply is at the same size.
+	buffer := buf.NewSize(len(message))
 	defer buffer.Release()
 	_, _, err = buffer.ReadPacketFrom(packetConn)
 	if err != nil {
