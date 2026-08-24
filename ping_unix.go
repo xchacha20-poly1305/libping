@@ -4,6 +4,7 @@ package libping
 
 import (
 	"context"
+	"io"
 	"net"
 	"os"
 
@@ -14,7 +15,9 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func listenIcmp(ctx context.Context, controlFunc control.Func, addr M.Socksaddr) (net.PacketConn, error) {
+// listenIcmp also returns the underlying *os.File as closer,
+// because net.FilePacketConn duplicates the fd and the caller must close both independently.
+func listenIcmp(ctx context.Context, controlFunc control.Func, addr M.Socksaddr) (net.PacketConn, io.Closer, error) {
 	var (
 		fd  int
 		err error
@@ -25,19 +28,22 @@ func listenIcmp(ctx context.Context, controlFunc control.Func, addr M.Socksaddr)
 		fd, err = unix.Socket(unix.AF_INET, unix.SOCK_DGRAM, unix.IPPROTO_ICMP)
 	}
 	if err != nil {
-		return nil, E.Cause(err, "create socket")
+		return nil, nil, E.Cause(err, "create socket")
 	}
-
 	file := os.NewFile(uintptr(fd), "dgram")
-
 	if controlFunc != nil {
 		err = controlFunc(N.NetworkICMP, addr.String(), fdProvider(fd))
 		if err != nil {
-			return nil, E.Cause(err, "control")
+			_ = file.Close()
+			return nil, nil, E.Cause(err, "control")
 		}
 	}
-
-	return net.FilePacketConn(file)
+	packetConn, err := net.FilePacketConn(file)
+	if err != nil {
+		_ = file.Close()
+		return nil, nil, E.Cause(err, "create packet connection")
+	}
+	return packetConn, file, nil
 }
 
 func toNetAddr(addr M.Socksaddr) net.Addr {
