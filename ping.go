@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sagernet/sing/common"
 	"github.com/sagernet/sing/common/buf"
 	"github.com/sagernet/sing/common/control"
 	E "github.com/sagernet/sing/common/exceptions"
@@ -68,13 +69,15 @@ func IcmpPing(
 ) (time.Duration, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	packetConn, err := listenIcmp(ctx, controlFunc, addr)
+	packetConn, closer, err := listenIcmp(ctx, controlFunc, addr)
 	if err != nil {
 		return -1, E.Cause(err, "listen icmp packet")
 	}
-	context.AfterFunc(ctx, func() {
+	defer common.Close(closer, packetConn)
+	stop := context.AfterFunc(ctx, func() {
 		_ = packetConn.Close()
 	})
+	defer stop()
 	message, err := buildIcmpMessage(payload, addr.IsIPv6())
 	if err != nil {
 		return -1, E.Cause(err, "marshall icmp message")
@@ -92,7 +95,6 @@ func IcmpPing(
 	if err != nil {
 		return -1, E.Cause(err, "read icmp message")
 	}
-
 	return time.Since(start), nil
 }
 

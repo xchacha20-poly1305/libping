@@ -2,6 +2,7 @@ package libping
 
 import (
 	"context"
+	"io"
 	"net"
 
 	"github.com/sagernet/sing/common/control"
@@ -9,7 +10,7 @@ import (
 	M "github.com/sagernet/sing/common/metadata"
 )
 
-func listenIcmp(ctx context.Context, controlFunc control.Func, addr M.Socksaddr) (net.PacketConn, error) {
+func listenIcmp(ctx context.Context, controlFunc control.Func, addr M.Socksaddr) (net.PacketConn, io.Closer, error) {
 	var listenConfig = net.ListenConfig{
 		Control: controlFunc,
 	}
@@ -21,13 +22,13 @@ func listenIcmp(ctx context.Context, controlFunc control.Func, addr M.Socksaddr)
 	}
 	packetConn, err := listenConfig.ListenPacket(ctx, network, "")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if _, isUDP := packetConn.LocalAddr().(*net.UDPAddr); isUDP {
 		_ = packetConn.Close()
-		return nil, E.New("listen on UDP because not running in admin")
+		return nil, nil, E.New("listen on UDP because not running in admin")
 	}
-	return packetConn, nil
+	return packetConn, nil, nil
 }
 
 func toNetAddr(addr M.Socksaddr) net.Addr {
