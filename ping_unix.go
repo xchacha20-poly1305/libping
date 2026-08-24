@@ -43,3 +43,9 @@ func listenIcmp(ctx context.Context, controlFunc control.Func, addr M.Socksaddr)
 func toNetAddr(addr M.Socksaddr) net.Addr {
 	return addr.UDPAddr()
 }
+
+// replyBufferSize returns the buffer size needed to read an ICMP reply.
+// On Unix, SOCK_DGRAM ICMP sockets strip the IP header before delivery.
+func replyBufferSize(msgLen int, isIPv6 bool) int {
+	return msgLen
+}

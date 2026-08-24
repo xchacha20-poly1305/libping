@@ -33,3 +33,16 @@ func listenIcmp(ctx context.Context, controlFunc control.Func, addr M.Socksaddr)
 func toNetAddr(addr M.Socksaddr) net.Addr {
 	return addr.IPAddr()
 }
+
+// replyBufferSize returns the buffer size needed to read an ICMP reply.
+// On Windows, raw ICMP sockets include the IP header in received packets.
+// IPv4 header is 20–60 bytes; IPv6 header is 40 bytes fixed.
+func replyBufferSize(msgLen int, isIPv6 bool) int {
+	var headerSize int
+	if isIPv6 {
+		headerSize = 40
+	} else {
+		headerSize = 60
+	}
+	return msgLen + headerSize
+}

@@ -75,7 +75,8 @@ func IcmpPing(
 	context.AfterFunc(ctx, func() {
 		_ = packetConn.Close()
 	})
-	message, err := buildIcmpMessage(payload, addr.IsIPv6())
+	isIPv6 := addr.IsIPv6()
+	message, err := buildIcmpMessage(payload, isIPv6)
 	if err != nil {
 		return -1, E.Cause(err, "marshall icmp message")
 	}
@@ -85,8 +86,7 @@ func IcmpPing(
 	if err != nil {
 		return -1, E.Cause(err, "write packet")
 	}
-	// Sometimes the reply's size is larger. 128 may enough?
-	buffer := buf.NewSize(128)
+	buffer := buf.NewSize(replyBufferSize(len(message), isIPv6))
 	defer buffer.Release()
 	_, _, err = buffer.ReadPacketFrom(packetConn)
 	if err != nil {
