@@ -67,6 +67,9 @@ func IcmpPing(
 	payload []byte,
 	controlFunc control.Func,
 ) (time.Duration, error) {
+	if addr.IsDomain() {
+		return -1, E.New("icmp cannot work with a domain")
+	}
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	packetConn, closer, err := listenIcmp(ctx, controlFunc, addr)
