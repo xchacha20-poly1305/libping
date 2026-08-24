@@ -31,6 +31,9 @@ func listenIcmp(ctx context.Context, controlFunc control.Func, addr M.Socksaddr)
 		return nil, nil, E.Cause(err, "create socket")
 	}
 	file := os.NewFile(uintptr(fd), "dgram")
+	if file == nil {
+		return nil, nil, E.New("create file from fd")
+	}
 	if controlFunc != nil {
 		err = controlFunc(N.NetworkICMP, addr.String(), fdProvider(fd))
 		if err != nil {
